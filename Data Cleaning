@@ -1,0 +1,221 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+students_df = pd.read_csv('/content/students_df_cleaned (2).csv')
+pd.set_option('display.width', 1000)
+
+# Check the shape of the dataset
+print("\nDataset shape:", students_df.shape)
+
+# Check the data types of the variables
+print("\nData types:")
+print(students_df.dtypes)
+
+# Check the first few rows of the dataset
+print("\nFirst few rows:\n", students_df.head())
+
+# Calculate the summary statistics for all columns
+summary = students_df.describe().transpose().round(2)
+summary = summary.rename(columns={'50%': 'median', 'std': 'sd'}) # Change 50% to median
+
+# Add columns for the number of missing values and the completeness rate
+summary['n_missing'] = students_df.isnull().sum()
+summary['complete_rate'] = 1 - (students_df.isnull().sum() / len(students_df))
+
+# Print the summary statistics
+print("\nSummary statistics\n",
+      summary[['mean', 'sd', 'min', '25%', 'median', '75%', 'max', 'n_missing', 'complete_rate']])
+
+'''
+# Check the missing values in the dataset
+print("Missing values:\n", students_df.isnull().sum())
+'''
+
+# Display number of duplicated rows
+print("Number of duplicated rows: ",students_df.duplicated().sum())
+
+# Display rows with duplicates
+#print(students_df[students_df.duplicated()])
+# Get no of Unique values in every column
+for col in students_df.columns:
+    if len(students_df[col].unique()) < 10:
+        print(f"{col} has {len(students_df[col].unique())} unique values; Repeated values are {sorted(students_df[col].unique())}")
+    else:
+        print(f"{col} has {len(students_df[col].unique())} values")
+
+# Defining categorical and quantitative columns based on the above checks and metadata description
+categorical_cols = [  "Application mode", "Application order", "Course", "Daytime/evening attendance",
+                    "Previous qualification", "Mother's qualification", "Father's qualification", "Mother's occupation",
+                    "Father's occupation", "Displaced", "Educational special needs", "Debtor", "Tuition fees up to date", "Gender",
+                    "Scholarship holder", "International", "Target"]
+
+quantitative_cols = ['Curricular units 1st sem (credited)', 'Curricular units 1st sem (enrolled)', 'Curricular units 1st sem (evaluations)',
+                  'Curricular units 1st sem (approved)', 'Curricular units 1st sem (grade)', 'Curricular units 1st sem (without evaluations)',
+                  'Curricular units 2nd sem (credited)', 'Curricular units 2nd sem (enrolled)', 'Curricular units 2nd sem (evaluations)',
+                  'Curricular units 2nd sem (approved)', 'Curricular units 2nd sem (grade)', 'Curricular units 2nd sem (without evaluations)',
+                  'Age at enrollment', 'Inflation rate', 'GDP', 'Unemployment rate']
+
+# Print the actual column names of the DataFrame to compare with the list
+print("DataFrame columns:", students_df.columns.tolist())
+
+# After printing the columns, identify the correct spelling of the nationality column
+# and correct the 'Nacionality' entry in the categorical_cols list if needed.
+# For example, if the column is actually 'Nationality' (with a t), change the list to:
+categorical_cols = [  "Application mode", "Application order", "Course", "Daytime/evening attendance",
+                    "Previous qualification", "Mother's qualification", "Father's qualification", "Mother's occupation",
+                    "Father's occupation", "Displaced", "Educational special needs", "Debtor", "Tuition fees up to date", "Gender",
+                    "Scholarship holder", "International", "Target"]
+
+quantitative_cols = ['Curricular units 1st sem (credited)', 'Curricular units 1st sem (enrolled)', 'Curricular units 1st sem (evaluations)',
+                  'Curricular units 1st sem (approved)', 'Curricular units 1st sem (grade)', 'Curricular units 1st sem (without evaluations)',
+                  'Curricular units 2nd sem (credited)', 'Curricular units 2nd sem (enrolled)', 'Curricular units 2nd sem (evaluations)',
+                  'Curricular units 2nd sem (approved)', 'Curricular units 2nd sem (grade)', 'Curricular units 2nd sem (without evaluations)',
+                  'Age at enrollment', 'Inflation rate', 'GDP', 'Unemployment rate']
+
+# Loop through categorical columns and create barplot for each
+fig, axes = plt.subplots(nrows=5, ncols=4, figsize=(20, 25))
+for i, col in enumerate(categorical_cols):
+    row_idx = i // 4
+    col_idx = i % 4
+    vc = students_df[col].value_counts(normalize=True)
+    vc = vc.sort_index() # sort by category name
+    vc.plot(kind="bar", ax=axes[row_idx, col_idx], rot=0)
+    axes[row_idx, col_idx].set_title(col)
+    for tick in axes[row_idx, col_idx].get_xticklabels():
+        tick.set_rotation(90)
+    for tick in axes[row_idx, col_idx].get_yticklabels():
+        tick.set_visible(False)
+fig.tight_layout()
+plt.show()
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# First, filter to only existing categorical columns
+existing_categorical_cols = [col for col in categorical_cols if col in students_df.columns]
+
+# If no categorical_cols defined, auto-detect them
+if not existing_categorical_cols:
+    # Auto-detect categorical columns (object type or low cardinality)
+    existing_categorical_cols = []
+    for col in students_df.columns:
+        if students_df[col].dtype == 'object' or students_df[col].nunique() < 20:
+            existing_categorical_cols.append(col)
+
+print(f"Plotting {len(existing_categorical_cols)} categorical columns: {existing_categorical_cols}")
+
+if not existing_categorical_cols:
+    print("No categorical columns found to plot!")
+else:
+    # Calculate grid dimensions based on actual number of columns
+    n_cols = len(existing_categorical_cols)
+    ncols = 4
+    nrows = (n_cols + ncols - 1) // ncols  # Ceiling division
+
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20, 5*nrows))
+
+    # Handle case where we only have one row
+    if nrows == 1:
+        axes = axes.reshape(1, -1)
+
+    for i, col in enumerate(existing_categorical_cols):
+        row_idx = i // ncols
+        col_idx = i % ncols
+
+        # Get value counts and handle potential issues
+        vc = students_df[col].value_counts(normalize=True)
+        vc = vc.sort_index()  # sort by category name
+
+        # Create the bar plot
+        vc.plot(kind="bar", ax=axes[row_idx, col_idx], rot=0)
+        axes[row_idx, col_idx].set_title(col, fontsize=12, fontweight='bold')
+
+        # Rotate x-axis labels
+        for tick in axes[row_idx, col_idx].get_xticklabels():
+            tick.set_rotation(45)
+            tick.set_ha('right')  # Better alignment for rotated labels
+
+        # Hide y-axis labels but keep the ticks
+        axes[row_idx, col_idx].set_ylabel('Proportion')
+        for tick in axes[row_idx, col_idx].get_yticklabels():
+            tick.set_visible(False)
+
+    # Hide empty subplots if any
+    for i in range(len(existing_categorical_cols), nrows * ncols):
+        row_idx = i // ncols
+        col_idx = i % ncols
+        axes[row_idx, col_idx].set_visible(False)
+
+    fig.tight_layout()
+    plt.show()
+
+# Alternative: Create individual plots with better formatting
+print("\nAlternative: Individual plots with better visibility")
+
+# Calculate optimal figure size based on number of plots
+n_plots = len(existing_categorical_cols)
+if n_plots > 0:
+    cols_per_row = 3
+    rows_needed = (n_plots + cols_per_row - 1) // cols_per_row
+
+    fig, axes = plt.subplots(nrows=rows_needed, ncols=cols_per_row,
+                            figsize=(15, 4*rows_needed))
+
+    if rows_needed == 1 and n_plots > 1:
+        axes = axes.reshape(1, -1)
+    elif n_plots == 1:
+        axes = [axes]
+
+    for i, col in enumerate(existing_categorical_cols):
+        if rows_needed > 1:
+            ax = axes[i // cols_per_row, i % cols_per_row]
+        else:
+            ax = axes[i] if n_plots > 1 else axes
+
+        # Create value counts
+        vc = students_df[col].value_counts()
+
+        # Create bar plot
+        bars = ax.bar(range(len(vc)), vc.values)
+        ax.set_title(f'{col}\n(Total: {vc.sum()})', fontweight='bold')
+        ax.set_xticks(range(len(vc)))
+        ax.set_xticklabels(vc.index, rotation=45, ha='right')
+        ax.set_ylabel('Count')
+
+        # Add value labels on bars
+        for bar, value in zip(bars, vc.values):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
+                   str(value), ha='center', va='bottom', fontweight='bold')
+
+    # Hide empty subplots
+    total_subplots = rows_needed * cols_per_row
+    for i in range(n_plots, total_subplots):
+        if rows_needed > 1:
+            axes[i // cols_per_row, i % cols_per_row].set_visible(False)
+        elif total_subplots > n_plots:
+            axes[i].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
+ #Plot histograms for all quantitative columns
+students_df[quantitative_cols].hist(figsize=(20, 20));
+# Numerical Summaries for quantitative variables
+summary_df = students_df[quantitative_cols].describe().loc[['mean', 'std', 'min', '25%', '50%', '75%', 'max']]
+summary_df.loc['skew'] = students_df[quantitative_cols].skew()
+
+summary_df
+# Show numerical summaries for columns of interest i.e. Inflation rate and GDP
+cols_of_interest = ['Inflation rate', 'GDP']
+summary_df2 = students_df[cols_of_interest].describe().loc[['mean', 'std', 'min', '25%', '50%', '75%', 'max']]
+summary_df2.loc['skew'] = students_df[cols_of_interest].skew()
+print(summary_df2)
+# Show skew values for higher skew variables
+print("Variables with higher skew values:")
+for col in quantitative_cols:
+    if abs(summary_df.loc['skew', col]) > 1:
+        print(f"\t{col}: {summary_df.loc['skew', col]}")
+# Show skew values for higher skew variables
+print("Variables with higher skew values:")
+for col in quantitative_cols:
+    if abs(summary_df.loc['skew', col]) > 1:
+        print(f"\t{col}: {summary_df.loc['skew', col]}")
